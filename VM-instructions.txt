@@ -1,0 +1,139 @@
+===============================================================================
+ Piscine DataScience - Module 0 - Exercise 00 : Create Postgres DB
+ VM-instructions.txt
+===============================================================================
+
+Environment
+-----------
+- Virtual machine: Alpine Linux 3.21 (OpenRC init system), running in VirtualBox.
+- PostgreSQL installed natively in the VM (no Docker).
+- PostgreSQL major version: 17 (newest available in the Alpine 3.21 repositories;
+  the subject requires no specific version).
+
+Required outcome (from the subject)
+-----------------------------------
+- Database name : piscineds
+- User          : fcatala-        (the student login)
+- Password      : mysecretpassword
+- Must connect with:
+      psql -U fcatala- -d piscineds -h localhost -W
+
+IMPORTANT NOTES BEFORE STARTING
+-------------------------------
+1. USERNAME QUOTING. The login "fcatala-" ends in a hyphen. In SQL, an identifier
+   containing a hyphen MUST be written between double quotes: "fcatala-".
+   The password value is written in single quotes: 'mysecretpassword'.
+   The password is case-sensitive; the SQL keywords are not.
+
+2. ALPINE CONFIG LAYOUT. Alpine keeps the PostgreSQL configuration files OUTSIDE
+   the data directory:
+       - data directory : /var/lib/postgresql/17/data
+       - config files    : /etc/postgresql/  (postgresql.conf, pg_hba.conf)
+   Edit pg_hba.conf at /etc/postgresql/pg_hba.conf -- editing the copy inside the
+   data directory has NO effect, because the server does not read it.
+   Confirm the active path at any time with:
+       sudo su postgres -c "psql -c 'SHOW hba_file;'"
+
+
+-------------------------------------------------------------------------------
+ STEP 1 - Install PostgreSQL
+-------------------------------------------------------------------------------
+Run as root (or with sudo):
+
+    apk add postgresql17 postgresql17-contrib
+
+(To see which versions your Alpine release offers:  apk search -x postgresql | sort)
+
+
+-------------------------------------------------------------------------------
+ STEP 2 - Enable and start the service (OpenRC)
+-------------------------------------------------------------------------------
+    rc-update add postgresql default
+    rc-service postgresql start
+
+On the first start, Alpine's init script automatically initializes the database
+cluster (runs initdb) if the data directory is empty. So no manual initdb is
+required. Verify the service is running:
+
+    rc-service postgresql status        # expect: status: started
+
+
+-------------------------------------------------------------------------------
+ STEP 3 - Create the user and the database
+-------------------------------------------------------------------------------
+Open an interactive psql session as the postgres superuser (over the local
+socket, no password needed):
+
+    sudo su postgres -c psql
+
+At the postgres=# prompt, run:
+
+    CREATE USER "fcatala-" WITH ENCRYPTED PASSWORD 'mysecretpassword';
+    CREATE DATABASE piscineds OWNER "fcatala-";
+    \q
+
+Expected replies: CREATE ROLE, then CREATE DATABASE.
+Creating the database with OWNER "fcatala-" ensures that user can create and drop
+tables in it throughout the piscine without schema-permission issues.
+
+
+-------------------------------------------------------------------------------
+ STEP 4 - Enforce password authentication over TCP
+-------------------------------------------------------------------------------
+The eval command uses "-h localhost -W", i.e. a TCP connection with a password.
+By default Alpine's freshly-initialized pg_hba.conf sets the host (TCP) lines to
+"trust", which accepts connections WITHOUT checking the password. Change the two
+host lines to "scram-sha-256" so the password is actually required.
+
+Edit /etc/postgresql/pg_hba.conf and change:
+
+    host    all    all    127.0.0.1/32    trust
+    host    all    all    ::1/128         trust
+to:
+    host    all    all    127.0.0.1/32    scram-sha-256
+    host    all    all    ::1/128         scram-sha-256
+
+(One-liner equivalent:)
+    sudo sed -i -E 's#^(host\s+all\s+all\s+(127\.0\.0\.1/32|::1/128)\s+)trust#\1scram-sha-256#' /etc/postgresql/pg_hba.conf
+
+Reload the configuration (no restart needed):
+
+    sudo rc-service postgresql reload
+
+Verify the change is LOADED BY THE SERVER (not just present in the file):
+
+    sudo su postgres -c "psql -c \"SELECT address, auth_method FROM pg_hba_file_rules WHERE type='host';\""
+
+The 127.0.0.1 and ::1 rows should now read scram-sha-256.
+
+
+-------------------------------------------------------------------------------
+ STEP 5 - Test (the eval command and negative checks)
+-------------------------------------------------------------------------------
+Correct password -> connects:
+
+    psql -U fcatala- -d piscineds -h localhost -W
+    (enter: mysecretpassword)     -> prompt becomes  piscineds=>
+
+Negative checks (should FAIL, proving the password is enforced):
+
+    env -u PGPASSWORD psql -U fcatala- -d piscineds -h localhost -w -c "SELECT 1;"
+        -> fe_sendauth: no password supplied
+    psql -U fcatala- -d piscineds -h localhost -W    (enter a wrong password)
+        -> FATAL: password authentication failed
+
+
+-------------------------------------------------------------------------------
+ SUMMARY OF COMMANDS
+-------------------------------------------------------------------------------
+    apk add postgresql17 postgresql17-contrib
+    rc-update add postgresql default
+    rc-service postgresql start
+    sudo su postgres -c psql
+        CREATE USER "fcatala-" WITH ENCRYPTED PASSWORD 'mysecretpassword';
+        CREATE DATABASE piscineds OWNER "fcatala-";
+        \q
+    sudo sed -i -E 's#^(host\s+all\s+all\s+(127\.0\.0\.1/32|::1/128)\s+)trust#\1scram-sha-256#' /etc/postgresql/pg_hba.conf
+    sudo rc-service postgresql reload
+    psql -U fcatala- -d piscineds -h localhost -W
+===============================================================================
