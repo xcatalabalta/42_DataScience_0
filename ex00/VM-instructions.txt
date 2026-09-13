@@ -132,6 +132,10 @@ Connect to Intra 42
 Go to the project's page
 Download the required files into the above created folder
 
+
+Add flake8 to check the python files:
+    sudo apk add py3-flake8
+
 -------------------------------------------------------------------------------
  SUMMARY OF COMMANDS
 -------------------------------------------------------------------------------
