@@ -1,0 +1,6 @@
+# Database folders
+customer/
+item/
+
+# Database files
+*.csv

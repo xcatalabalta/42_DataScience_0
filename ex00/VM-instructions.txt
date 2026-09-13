@@ -122,6 +122,15 @@ Negative checks (should FAIL, proving the password is enforced):
     psql -U fcatala- -d piscineds -h localhost -W    (enter a wrong password)
         -> FATAL: password authentication failed
 
+-------------------------------------------------------------------------------
+ STEP 6 - Download the required files of the project
+-------------------------------------------------------------------------------
+Create the folder which is going to contain the database
+    mkdir -p data_postgres
+Open the Firefox browser in the VM (install Firefox if not present in the VM)
+Connect to Intra 42
+Go to the project's page
+Download the required files into the above created folder
 
 -------------------------------------------------------------------------------
  SUMMARY OF COMMANDS
