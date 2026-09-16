@@ -9,6 +9,7 @@ Environment
 - PostgreSQL installed natively in the VM (no Docker).
 - PostgreSQL major version: 17 (newest available in the Alpine 3.21 repositories;
   the subject requires no specific version).
+- GUI and browser are already installed in the VM.
 
 Required outcome (from the subject)
 -----------------------------------
