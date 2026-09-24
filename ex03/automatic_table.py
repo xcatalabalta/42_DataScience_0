@@ -41,7 +41,7 @@ DB_USER = "fcatala-"
 DB_HOST = "localhost"
 DB_PORT = 5432
 
-DATA_SUBDIR = "customer"   # folder (relative to repo root) to scan for CSVs
+DATA_SUBDIR = "data/customer"   # folder (relative to repo root) to scan for CSVs
 
 
 def create_sql(table):
@@ -96,6 +96,20 @@ def get_password():
     if env_pw:
         return env_pw
     return getpass.getpass(f"Password for PostgreSQL user '{DB_USER}': ")
+
+
+def count_rows(file_path):
+    """
+    Count the number of rows in the CSV file, excluding the header.
+    Arguments:
+        file_path: path to the CSV file (string)
+    Returns:
+        the number of rows (int)
+    """
+    with open(file_path, "r") as f:
+        # Skip the header line
+        next(f)
+        return sum(1 for _ in f)
 
 
 def table_name_from_path(csv_path):
@@ -164,6 +178,9 @@ def main():
                 print(f"\nProcessing {name} ...")
                 table, rowcount = load_one(conn, csv_path)
                 print(f"  OK: table {table} loaded with {rowcount} rows.")
+                filerows = count_rows(csv_path)
+                print(f"  Original files contains {filerows} rows (excluding header).")
+                print(f"  {filerows - rowcount} row(s) skipped.")
                 ok += 1
             except Exception as e:                     # report and continue
                 # The failed transaction was rolled back by 'with conn:'.
