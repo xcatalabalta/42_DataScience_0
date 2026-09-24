@@ -13,8 +13,8 @@ Schema (subject requires at least THREE different data types):
 Three distinct types: INTEGER, BIGINT, VARCHAR.
 
 All columns are nullable by design: category_id (~38% empty) and category_code
-(~99% empty) are frequently missing, and leaving every column nullable keeps the
-load robust. Empty CSV fields are loaded as NULL (COPY ... NULL '').
+(~99% empty) are frequently missing, and leaving every column nullable keeps
+the load robust. Empty CSV fields are loaded as NULL (COPY ... NULL '').
 
 Behaviour:
   - DROP TABLE IF EXISTS items, then CREATE, then bulk-load via
@@ -41,7 +41,8 @@ DB_HOST = "localhost"
 DB_PORT = 5432
 
 TABLE_NAME = "items"
-DATA_SUBDIR = "item"                       # folder (relative to repo root)
+# folder (relative to repo root)
+DATA_SUBDIR = "data/item"
 CSV_FILENAME = "item.csv"
 
 CREATE_SQL = f"""
@@ -67,7 +68,7 @@ def find_csv_path():
     csv_path = os.path.join(repo_root, DATA_SUBDIR, CSV_FILENAME)
     if not os.path.isfile(csv_path):
         sys.exit(f"ERROR: CSV not found at {csv_path}\n"
-                 f"Did you run ex01/decompress_data.sh first?")
+                 f"Did you run the decompress script first?")
     return csv_path
 
 
@@ -76,6 +77,19 @@ def get_password():
     if env_pw:
         return env_pw
     return getpass.getpass(f"Password for PostgreSQL user '{DB_USER}': ")
+
+
+def count_rows(file_path):
+    """
+    Count the number of rows in the CSV file, excluding the header.
+    Arguments:
+        file_path: path to the CSV file (string)
+    Returns:
+        the number of rows (int)
+    """
+    with open(file_path, "r") as f:
+        lines = len(f.readlines())
+    return lines - 1  # Exclude header
 
 
 def main():
@@ -91,7 +105,8 @@ def main():
         sys.exit(f"ERROR: could not connect to the database.\n{e}")
 
     try:
-        with conn:                       # commits on success, rolls back on error
+        # commits on success, rolls back on error
+        with conn:
             with conn.cursor() as cur:
                 print(f"Dropping table {TABLE_NAME} if it exists ...")
                 cur.execute(f"DROP TABLE IF EXISTS {TABLE_NAME};")
@@ -105,7 +120,10 @@ def main():
 
                 cur.execute(f"SELECT count(*) FROM {TABLE_NAME};")
                 (rowcount,) = cur.fetchone()
+                filerows = count_rows(csv_path)
                 print(f"Done. {TABLE_NAME} now contains {rowcount} rows.")
+                print(f"Original CSV file contains {filerows} rows of data.")
+                print(f"{filerows - rowcount} row(s) skipped.")
     finally:
         conn.close()
 

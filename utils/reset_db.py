@@ -2,8 +2,8 @@
 """
 reset_db.py  --  "make fclean" for the piscineds database
 
-Drops ALL tables in the public schema of piscineds, returning the database to an
-empty state.
+Drops ALL tables in the public schema of piscineds, returning the database
+to an empty state.
 
 What it RESETS:
   - every table in schema public (the four monthly tables, items, and anything
@@ -40,7 +40,8 @@ DECLARE
     r RECORD;
 BEGIN
     FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
-        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) ||
+        ' CASCADE';
     END LOOP;
 END $$;
 """
@@ -79,7 +80,7 @@ def main():
                     print("No tables in public schema. Nothing to reset.")
                     return
 
-                print("The following tables will be DROPPED from piscineds (public):")
+                print("The following tables will be DROPPED from piscineds:")
                 for t in tables:
                     print(f"  - {t}")
 

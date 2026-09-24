@@ -40,8 +40,8 @@ DB_NAME = "piscineds"
 DB_USER = "fcatala-"
 DB_HOST = "localhost"
 DB_PORT = 5432
-
-DATA_SUBDIR = "data/customer"   # folder (relative to repo root) to scan for CSVs
+# folder (relative to repo root) to scan for CSVs
+DATA_SUBDIR = "data/customer"
 
 
 def create_sql(table):
@@ -78,8 +78,8 @@ def find_csv_path():
     repo_root = os.path.dirname(script_dir)          # parent of ex03/
     csv_path = os.path.join(repo_root, DATA_SUBDIR)
     if not os.path.isdir(csv_path):
-        sys.exit(f"ERROR: data folder not found at {data_dir}\n"
-                 f"Did you run ex01/decompress_data.sh first?")
+        sys.exit(f"ERROR: data folder not found at {csv_path}\n"
+                 f"Did you run the decompress script first?")
     return csv_path
 
 
@@ -179,7 +179,7 @@ def main():
                 table, rowcount = load_one(conn, csv_path)
                 print(f"  OK: table {table} loaded with {rowcount} rows.")
                 filerows = count_rows(csv_path)
-                print(f"  Original files contains {filerows} rows (excluding header).")
+                print(f"  Original file contains {filerows} rows of data.")
                 print(f"  {filerows - rowcount} row(s) skipped.")
                 ok += 1
             except Exception as e:                     # report and continue

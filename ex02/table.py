@@ -81,7 +81,7 @@ def find_csv_path():
     csv_path = os.path.join(repo_root, CSV_RELATIVE)
     if not os.path.isfile(csv_path):
         sys.exit(f"ERROR: CSV not found at {csv_path}\n"
-                 f"Did you run decompress_data.sh first?")
+                 f"Did you run the decompress script first?")
     return csv_path
 
 
@@ -112,6 +112,7 @@ def count_rows(file_path):
         # Skip the header line
         next(f)
         return sum(1 for _ in f)
+
 
 def main():
     """
@@ -149,9 +150,11 @@ def main():
                 cur.execute(f"SELECT count(*) FROM {TABLE_NAME};")
                 (rowcount,) = cur.fetchone()
                 print(f"Done. {TABLE_NAME} now contains {rowcount} rows.")
+                filerows = count_rows(csv_path)
+                print(f"Original file contains {filerows} rows of data.")
+                print(f"{filerows - rowcount} row(s) skipped.")
     finally:
         conn.close()
-    print(f"CSV file {csv_path} contains {count_rows(csv_path)} rows (excluding header).")
 
 
 if __name__ == "__main__":
