@@ -1,6 +1,7 @@
 # Database folders
 customer/
 item/
+data/
 
 # Database files
 *.csv
