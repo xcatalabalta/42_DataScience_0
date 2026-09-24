@@ -19,8 +19,8 @@
 # The archive nests its content under a top-level subject/ directory:
 #     subject/customer/data_2022_*.csv , data_2023_jan.csv
 #     subject/item/item.csv
-# This script strips that subject/ prefix so the folders land as customer/ and
-# item/ at the repository root.
+# This script strips that subject/ prefix so the folders land as data/customer/ and
+# data/item/ at the repository root.
 #
 # Idempotent: safe to re-run. Skips work if the targets already exist and are
 # populated (use --force to re-extract).

@@ -46,7 +46,7 @@ DB_HOST = "localhost"
 DB_PORT = 5432
 
 TABLE_NAME = "data_2022_oct"
-CSV_RELATIVE = os.path.join("customer", "data_2022_oct.csv")
+CSV_RELATIVE = os.path.join("data/customer", "data_2022_oct.csv")
 
 CREATE_SQL = f"""
 CREATE TABLE {TABLE_NAME} (
@@ -81,7 +81,7 @@ def find_csv_path():
     csv_path = os.path.join(repo_root, CSV_RELATIVE)
     if not os.path.isfile(csv_path):
         sys.exit(f"ERROR: CSV not found at {csv_path}\n"
-                 f"Did you run ex01/decompress_data.sh first?")
+                 f"Did you run decompress_data.sh first?")
     return csv_path
 
 
@@ -99,6 +99,19 @@ def get_password():
         return env_pw
     return getpass.getpass(f"Password for PostgreSQL user '{DB_USER}': ")
 
+
+def count_rows(file_path):
+    """
+    Count the number of rows in the CSV file, excluding the header.
+    Arguments:
+        file_path: path to the CSV file (string)
+    Returns:
+        the number of rows (int)
+    """
+    with open(file_path, "r") as f:
+        # Skip the header line
+        next(f)
+        return sum(1 for _ in f)
 
 def main():
     """
@@ -138,6 +151,7 @@ def main():
                 print(f"Done. {TABLE_NAME} now contains {rowcount} rows.")
     finally:
         conn.close()
+    print(f"CSV file {csv_path} contains {count_rows(csv_path)} rows (excluding header).")
 
 
 if __name__ == "__main__":
