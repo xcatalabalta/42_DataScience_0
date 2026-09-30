@@ -36,7 +36,7 @@ set -eu
 # --- Locate data/item relative to the repo root -----------------------------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"   # utils/
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"   # repo root
-DATA_DIR="${REPO_ROOT}/data/item"
+DATA_DIR="${REPO_ROOT}/data/items"
 
 if [ ! -d "${DATA_DIR}" ]; then
     echo "ERROR: ${DATA_DIR} not found. Run the decompress step first." >&2

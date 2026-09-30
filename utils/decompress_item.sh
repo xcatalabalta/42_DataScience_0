@@ -27,7 +27,7 @@ if ! command -v unzip >/dev/null 2>&1; then
     exit 1
 fi
 
-rm -rf customer item data
+rm -rf customer item data items
 
 # --- Extract to a temp dir, then move the inner folders into place
 TMPDIR=".subject_extract_tmp"
@@ -45,12 +45,12 @@ fi
 
 mkdir -p data/customer
 # mv "${TMPDIR}/subject/customer" "data/customer"
-mv "${TMPDIR}/subject/item" "data/item"
+mv "${TMPDIR}/subject/item" "data/items"
 rm -rf "${TMPDIR}"
 
 # --- Report
 echo "Done."
 echo "data/customer/ :"
 ls -1 data/customer
-echo "data/item/ :"
-ls -1 data/item
+echo "data/items/ :"
+ls -1 data/items

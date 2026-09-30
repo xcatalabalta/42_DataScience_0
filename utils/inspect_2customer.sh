@@ -105,6 +105,7 @@ for f in ${CSV_FILES}; do
         }'
 
     # --- Check 5: type-shape sanity, only for the known 6-column customer shape
+    # --- Check 5.1: Check minimum and maximum values for numeric fields (product_id, price, user_id)
     if [ "${EXPECTED_FIELDS}" -eq 6 ]; then
         shape="$(tail -n +2 "${f}" | awk -F',' '
             $3 != "" && $3 !~ /^[0-9]+$/ { badp++ }
@@ -123,30 +124,6 @@ for f in ${CSV_FILES}; do
         fi
     else
         echo "  type shapes : skipped (only checked for the known 6-column shape)"
-    fi
-    # --- Check 6: Check minimum and maximum values for numeric fields (product_id, price, user_id)
-    if [ "${EXPECTED_FIELDS}" -eq 6 ]; then
-        min_max="$(tail -n +2 "${f}" | awk -F',' '
-            $3 != "" { if (minp == "" || $3 < minp) minp = $3; if (maxp == "" || $3 > maxp) maxp = $3 }
-            $4 != "" { if (minpr == "" || $4 < minpr) minpr = $4; if (maxpr == "" || $4 > maxpr) maxpr = $4 }
-            $5 != "" { if (minu == "" || $5 < minu) minu = $5; if (maxu == "" || $5 > maxu) maxu = $5 }
-            END { printf "%s %s %s %s %s %s", minp, maxp, minpr, maxpr, minu, maxu }')"
-        set -- ${min_max}
-        minp=$1; maxp=$2; minpr=$3; maxpr=$4; minu=$5; maxu=$6
-        echo "  min/max     : product_id [${minp}, ${maxp}], price [${minpr}, ${maxpr}], user_id [${minu}, ${maxu}]"
-    # --- Check 6.1: Check if product_id and user-id are integer or bigint (in case of large values)
-        if [ "${minp}" -lt 2147483647 ] || [ "${maxp}" -gt 2147483647 ]; then
-            echo "                WARNING: product_id values exceed 32-bit integer range."
-        else
-            echo "                product_id values are within 32-bit integer range."
-        fi
-        if [ "${minu}" -lt 0 ] || [ "${maxu}" -gt 2147483647 ]; then
-            echo "                WARNING: user_id values exceed 32-bit integer range."
-        else
-            echo "                user_id values are within 32-bit integer range."
-        fi
-    else
-        echo "  min/max     : skipped (only checked for the known 6-column shape)"
     fi
 done
 

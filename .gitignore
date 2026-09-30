@@ -2,6 +2,7 @@
 customer/
 item/
 data/
+item/
 
 # Database files
 *.csv
