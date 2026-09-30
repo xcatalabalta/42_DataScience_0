@@ -4,7 +4,7 @@
 
 Reconstructs the project's data folders from the subject archive so the later
 exercises (ex02, ex03, ex04) can read the CSVs through the relative paths
-`customer/` and `item/`.
+`customer/` and `items/`.
 
 The subject ships its data as a single ZIP (`subject.zip`) whose contents are
 nested under a top-level `subject/` directory:
@@ -16,7 +16,7 @@ subject/
 │   ├── data_2022_nov.csv
 │   ├── data_2022_oct.csv
 │   └── data_2023_jan.csv
-└── item/
+└── items/
     └── item.csv
 ```
 
@@ -166,9 +166,9 @@ unzip -q -o "${ARCHIVE}" -d "${TMPDIR}"
 ### Moving the folders into place
 
 ```sh
-rm -rf customer item
+rm -rf customer item items
 mv "${TMPDIR}/subject/customer" customer
-mv "${TMPDIR}/subject/item" item
+mv "${TMPDIR}/subject/item" items
 rm -rf "${TMPDIR}"
 ```
 
