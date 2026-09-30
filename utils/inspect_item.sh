@@ -1,7 +1,7 @@
 #!/bin/sh
 # inspect_item.sh  (utils)
 # -----------------------------------------------------------------------------
-# Inspects the CSV file(s) in data/item/ (normally a single item.csv), mirroring
+# Inspects the CSV file(s) in data/items/ (normally a single item.csv), mirroring
 # the logic of inspect_customer.sh. Consistency / structure check for defense.
 #
 # The reference structure is taken from the FIRST file (alphabetically), not
@@ -20,20 +20,24 @@
 #   4. Empty-value count per column. For item, empties are EXPECTED and normal
 #      (category_id ~38% empty, category_code ~99% empty), so this is purely
 #      informative and never treated as an error.
-#   5. Type-shape sanity (only for the known 4-column item layout:
-#      product_id,category_id,category_code,brand):
+#   5. Type-shape sanity + min/max + 32-bit-int range, in a single pass (only for
+#      the known 4-column item layout: product_id,category_id,category_code,brand):
 #        product_id (col1) int, category_id (col2) int (both when non-empty);
 #        category_code (col3) and brand (col4) are free text -> not shape-checked.
+#        Reports min/max of the two numeric columns and warns if either exceeds
+#        the 32-bit integer range (i.e. needs BIGINT). category_id normally does.
 #      Column semantics cannot be auto-derived, so this runs only for 4 columns.
+#      The int-range verdict is computed inside awk (doubles), so it is safe for
+#      values larger than the shell's integer range.
 #
 # Exits 0 if consistent, non-zero if any problem is found.
-# Self-locating: finds data/item relative to the repo root (script in utils/).
+# Self-locating: finds data/items relative to the repo root (script in utils/).
 #
 # Run:  ./utils/inspect_item.sh   |   sh utils/inspect_item.sh
 # -----------------------------------------------------------------------------
 set -eu
 
-# --- Locate data/item relative to the repo root -----------------------------
+# --- Locate data/items relative to the repo root ----------------------------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"   # utils/
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"   # repo root
 DATA_DIR="${REPO_ROOT}/data/items"
@@ -105,29 +109,65 @@ for f in ${CSV_FILES}; do
                 printf "                %-14s : %d\n", names[i], empty[i]+0
         }'
 
-    # --- Check 5: type-shape sanity, only for the known 4-column item shape
+    # --- Check 5: type-shape sanity + min/max + int-range, single pass
+    #     (only for the known 4-column item layout)
     if [ "${EXPECTED_FIELDS}" -eq 4 ]; then
-        shape="$(tail -n +2 "${f}" | awk -F',' '
+        INT32_MAX=2147483647
+        result="$(tail -n +2 "${f}" | awk -F',' -v imax="${INT32_MAX}" '
+            # shape checks (only on non-empty values)
             $1 != "" && $1 !~ /^[0-9]+$/ { badp++ }
             $2 != "" && $2 !~ /^[0-9]+$/ { badc++ }
-            END { printf "%d %d", badp+0, badc+0 }')"
-        set -- ${shape}
+            # min/max for the two numeric columns (only on non-empty values)
+            $1 != "" { if (minp=="" || $1<minp) minp=$1; if (maxp=="" || $1>maxp) maxp=$1 }
+            $2 != "" { if (minc=="" || $2<minc) minc=$2; if (maxc=="" || $2>maxc) maxc=$2 }
+            END {
+                # int-range verdicts computed in awk (no shell integer limits)
+                p_over = (maxp != "" && maxp > imax) ? 1 : 0
+                c_over = (maxc != "" && maxc > imax) ? 1 : 0
+                # emit: badp badc  minp maxp minc maxc  p_over c_over
+                printf "%d %d %s %s %s %s %d %d",
+                    badp+0, badc+0,
+                    (minp==""?"NA":minp), (maxp==""?"NA":maxp),
+                    (minc==""?"NA":minc), (maxc==""?"NA":maxc),
+                    p_over, c_over
+            }')"
+        set -- ${result}
         badp=$1; badc=$2
+        minp=$3; maxp=$4; minc=$5; maxc=$6
+        p_over=$7; c_over=$8
+
+        # report shapes
         if [ "${badp}" -eq 0 ] && [ "${badc}" -eq 0 ]; then
             echo "  type shapes : OK (product_id & category_id integer when present)"
         else
             echo "  type shapes : product_id bad=${badp}, category_id bad=${badc}"
             problems=$((problems + 1))
         fi
+
+        # report min/max
+        echo "  min/max     : product_id [${minp}, ${maxp}], category_id [${minc}, ${maxc}]"
+
+        # report int-range verdicts (computed in awk, safe for large numbers)
+        if [ "${p_over}" -eq 1 ]; then
+            echo "                WARNING: product_id exceeds 32-bit integer range (needs BIGINT)."
+        else
+            echo "                product_id within 32-bit integer range."
+        fi
+        if [ "${c_over}" -eq 1 ]; then
+            echo "                WARNING: category_id exceeds 32-bit integer range (needs BIGINT)."
+        else
+            echo "                category_id within 32-bit integer range."
+        fi
     else
         echo "  type shapes : skipped (only checked for the known 4-column shape)"
+        echo "  min/max     : skipped (only checked for the known 4-column shape)"
     fi
 done
 
 echo ""
 echo "-------------------------------------------------------------------------"
 if [ "${problems}" -eq 0 ]; then
-    echo "RESULT: file(s) OK (header + field count$( [ "${EXPECTED_FIELDS}" -eq 4 ] && printf ' + valid shapes')). Empty counts reported above."
+    echo "RESULT: file(s) OK (header + field count$( [ "${EXPECTED_FIELDS}" -eq 4 ] && printf ' + valid shapes')). Empty counts and ranges reported above."
     exit 0
 else
     echo "RESULT: ${problems} problem(s) found. See details above."

@@ -104,16 +104,38 @@ for f in ${CSV_FILES}; do
                 printf "                %-14s : %d\n", names[i], empty[i]+0
         }'
 
-    # --- Check 5: type-shape sanity, only for the known 6-column customer shape
+        # --- Checks 5 & 6 combined: type-shape sanity + min/max + int-range,
+    #     in a single pass (only for the known 6-column customer layout)
     if [ "${EXPECTED_FIELDS}" -eq 6 ]; then
-        shape="$(tail -n +2 "${f}" | awk -F',' '
+        INT32_MAX=2147483647
+        result="$(tail -n +2 "${f}" | awk -F',' -v imax="${INT32_MAX}" '
+            # shape checks (only on non-empty values)
             $3 != "" && $3 !~ /^[0-9]+$/ { badp++ }
             $4 != "" && $4 !~ /^-?[0-9]+(\.[0-9]+)?$/ { badpr++ }
             $5 != "" && $5 !~ /^[0-9]+$/ { badu++ }
             $6 != "" && $6 !~ /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/ { bads++ }
-            END { printf "%d %d %d %d", badp+0, badpr+0, badu+0, bads+0 }')"
-        set -- ${shape}
+            # min/max for the three numeric columns (only on non-empty values)
+            $3 != "" { if (minp=="" || $3<minp) minp=$3; if (maxp=="" || $3>maxp) maxp=$3 }
+            $4 != "" { if (minpr=="" || $4<minpr) minpr=$4; if (maxpr=="" || $4>maxpr) maxpr=$4 }
+            $5 != "" { if (minu=="" || $5<minu) minu=$5; if (maxu=="" || $5>maxu) maxu=$5 }
+            END {
+                # int-range verdicts computed in awk (no shell integer limits)
+                p_over = (maxp != "" && maxp > imax) ? 1 : 0
+                u_over = (maxu != "" && (maxu > imax || minu < 0)) ? 1 : 0
+                # emit: badp badpr badu bads  minp maxp minpr maxpr minu maxu  p_over u_over
+                printf "%d %d %d %d %s %s %s %s %s %s %d %d",
+                    badp+0, badpr+0, badu+0, bads+0,
+                    (minp==""?"NA":minp), (maxp==""?"NA":maxp),
+                    (minpr==""?"NA":minpr), (maxpr==""?"NA":maxpr),
+                    (minu==""?"NA":minu), (maxu==""?"NA":maxu),
+                    p_over, u_over
+            }')"
+        set -- ${result}
         badp=$1; badpr=$2; badu=$3; bads=$4
+        minp=$5; maxp=$6; minpr=$7; maxpr=$8; minu=$9; maxu=${10}
+        p_over=${11}; u_over=${12}
+
+        # report shapes
         if [ "${badp}" -eq 0 ] && [ "${badpr}" -eq 0 ] \
            && [ "${badu}" -eq 0 ] && [ "${bads}" -eq 0 ]; then
             echo "  type shapes : OK (product_id/user_id int, price numeric, session UUID)"
@@ -121,31 +143,23 @@ for f in ${CSV_FILES}; do
             echo "  type shapes : product_id bad=${badp}, price bad=${badpr}, user_id bad=${badu}, session bad=${bads}"
             problems=$((problems + 1))
         fi
+
+        # report min/max
+        echo "  min/max     : product_id [${minp}, ${maxp}], price [${minpr}, ${maxpr}], user_id [${minu}, ${maxu}]"
+
+        # report int-range verdicts (computed in awk, safe for large numbers)
+        if [ "${p_over}" -eq 1 ]; then
+            echo "                WARNING: product_id exceeds 32-bit integer range (needs BIGINT)."
+        else
+            echo "                product_id within 32-bit integer range."
+        fi
+        if [ "${u_over}" -eq 1 ]; then
+            echo "                WARNING: user_id exceeds 32-bit integer range (needs BIGINT)."
+        else
+            echo "                user_id within 32-bit integer range."
+        fi
     else
         echo "  type shapes : skipped (only checked for the known 6-column shape)"
-    fi
-    # --- Check 6: Check minimum and maximum values for numeric fields (product_id, price, user_id)
-    if [ "${EXPECTED_FIELDS}" -eq 6 ]; then
-        min_max="$(tail -n +2 "${f}" | awk -F',' '
-            $3 != "" { if (minp == "" || $3 < minp) minp = $3; if (maxp == "" || $3 > maxp) maxp = $3 }
-            $4 != "" { if (minpr == "" || $4 < minpr) minpr = $4; if (maxpr == "" || $4 > maxpr) maxpr = $4 }
-            $5 != "" { if (minu == "" || $5 < minu) minu = $5; if (maxu == "" || $5 > maxu) maxu = $5 }
-            END { printf "%s %s %s %s %s %s", minp, maxp, minpr, maxpr, minu, maxu }')"
-        set -- ${min_max}
-        minp=$1; maxp=$2; minpr=$3; maxpr=$4; minu=$5; maxu=$6
-        echo "  min/max     : product_id [${minp}, ${maxp}], price [${minpr}, ${maxpr}], user_id [${minu}, ${maxu}]"
-    # --- Check 6.1: Check if product_id and user-id are integer or bigint (in case of large values)
-        if [ "${minp}" -lt 2147483647 ] || [ "${maxp}" -gt 2147483647 ]; then
-            echo "                WARNING: product_id values exceed 32-bit integer range."
-        else
-            echo "                product_id values are within 32-bit integer range."
-        fi
-        if [ "${minu}" -lt 0 ] || [ "${maxu}" -gt 2147483647 ]; then
-            echo "                WARNING: user_id values exceed 32-bit integer range."
-        else
-            echo "                user_id values are within 32-bit integer range."
-        fi
-    else
         echo "  min/max     : skipped (only checked for the known 6-column shape)"
     fi
 done
