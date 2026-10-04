@@ -128,6 +128,7 @@ Special command:
 
     Succeed without a password only because the OS user is also fcatala- and matches the role.
 
+
 -------------------------------------------------------------------------------
  STEP 6 - Download the required files of the project
 -------------------------------------------------------------------------------
@@ -141,6 +142,7 @@ Download the required files into the above created folder
 
 Add flake8 to check the python files:
     sudo apk add py3-flake8
+
 
 -------------------------------------------------------------------------------
  STEP 7 - Download the programs to run project
@@ -162,6 +164,7 @@ Output:
     sklearn 1.5.2
     statsmodels 0.14.4
     psycopg2 2.9.10 (dt dec pq3 ext lo64)
+
 
 -------------------------------------------------------------------------------
  STEP 8 - Download and configure DBeaver (ex01)
@@ -196,6 +199,8 @@ And re-connect to VM
  - Accept download the PostgreSQL JDBC driver on first connect
  - Test Connection
  - Finish (All OK)
+
+ 
 -------------------------------------------------------------------------------
  SUMMARY OF COMMANDS
 -------------------------------------------------------------------------------
