@@ -7,7 +7,15 @@ help: ## Show this help menu
 
 .PHONY: ex00
 ex00: ## Show the instructions for the project
-	cat -e ex00/VM-instructions.txt | more
+	@count=0; \
+	while IFS= read -r line || [ -n "$$line" ]; do \
+		printf '%s\n' "$$line" | cat -e; \
+		count=$$((count + 1)); \
+		if [ $$((count % 30)) -eq 0 ]; then \
+			printf '\033[32mPress Enter for the next 30 lines...\033[0m\n'; \
+			read -r _ < /dev/tty; \
+		fi; \
+	done < ex00/VM-instructions.txt
 
 .PHONY: ex01
 ex01: ## Requires the evaluator to open DBeaver to inspect the database.

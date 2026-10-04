@@ -104,7 +104,11 @@ for f in ${CSV_FILES}; do
                 printf "                %-14s : %d\n", names[i], empty[i]+0
         }'
 
-        # --- Checks 5 & 6 combined: type-shape sanity + min/max + int-range,
+    # --- Check 5: unique values in column 2 (event_type)
+    echo "  content of column 2 (event_type) :"
+    tail -n +2 "${f}" | cut -d',' -f2 | sort -u | awk '{print "                " $0}'
+
+    # --- Checks 6 combined: type-shape sanity + min/max + int-range,
     #     in a single pass (only for the known 6-column customer layout)
     if [ "${EXPECTED_FIELDS}" -eq 6 ]; then
         INT32_MAX=2147483647
