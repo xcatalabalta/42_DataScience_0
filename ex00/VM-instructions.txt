@@ -123,6 +123,11 @@ Negative checks (should FAIL, proving the password is enforced):
     psql -U fcatala- -d piscineds -h localhost -W    (enter a wrong password)
         -> FATAL: password authentication failed
 
+Special command:
+    psql -h /run/postgresql -U fcatala- -d piscineds
+
+    Succeed without a password only because the OS user is also fcatala- and matches the role.
+
 -------------------------------------------------------------------------------
  STEP 6 - Download the required files of the project
 -------------------------------------------------------------------------------
