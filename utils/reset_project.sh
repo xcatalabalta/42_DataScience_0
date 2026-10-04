@@ -1,5 +1,5 @@
 #!/bin/sh
-./reset_db.py --yes
+./utils/reset_db.py --yes
 # absolute path to present script
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # its parent = repo root
