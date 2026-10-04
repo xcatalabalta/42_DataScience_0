@@ -143,6 +143,60 @@ Add flake8 to check the python files:
     sudo apk add py3-flake8
 
 -------------------------------------------------------------------------------
+ STEP 7 - Download the programs to run project
+-------------------------------------------------------------------------------
+python packages for Alpine
+
+    sudo apk add py3-numpy py3-pandas py3-scipy py3-scikit-learn \
+    py3-matplotlib py3-seaborn py3-statsmodels py3-psycopg2
+
+Check the availability  of  python packages
+    python3 -c "import numpy, pandas, scipy, sklearn, matplotlib, seaborn, statsmodels, psycopg2; \
+    print('numpy', numpy.version); print('pandas', pandas.version); \
+    print('sklearn', sklearn.version); print('statsmodels', statsmodels.version); \
+    print('psycopg2', psycopg2.version)"
+
+Output:
+    numpy 2.1.3
+    pandas 2.2.3
+    sklearn 1.5.2
+    statsmodels 0.14.4
+    psycopg2 2.9.10 (dt dec pq3 ext lo64)
+
+-------------------------------------------------------------------------------
+ STEP 8 - Download and configure DBeaver (ex01)
+-------------------------------------------------------------------------------
+Installing DBeaver to visualize the database
+- Standard Linux distributions do not require a separate Java installation (because DBeaver bundles its own Java environment), but Alpine Linux is an exception. Alpine uses musl libc instead of the standard glibc. This means the glibc-compiled Java environment bundled with DBeaver will fail to execute out-of-the-box.
+- Since my Alpine VM has a graphical desktop environment installed, using **Flatpak** is the cleanest and most reliable route.
+
+- Commands:
+    - sudo apk add flatpak
+    - sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    - sudo flatpak install flathub io.dbeaver.DBeaverCommunity
+
+Reboot: sudo reboot
+And re-connect to VM
+
+- From Applications ⇒ Development ⇒ DBeaver (Follow the menu)
+    - Theme (lighter)
+    - Preferred database structure ⇒ Full
+    - Do not enable AI
+    - Database Dashboards selected
+    - Denied samples and sending back info
+    - Finally arrived to the Database Configuration
+- Configuration
+    - New Database Connection → PostgreSQL
+    - Host: localhost
+    Port: 5432
+    Database: piscineds
+    Username: fcatala-
+    Password: mysecretpassword
+
+ - Accept download the PostgreSQL JDBC driver on first connect
+ - Test Connection
+ - Finish (All OK)
+-------------------------------------------------------------------------------
  SUMMARY OF COMMANDS
 -------------------------------------------------------------------------------
     apk add postgresql17 postgresql17-contrib
